@@ -1,0 +1,227 @@
+/* themes.css - Para estilos de tema claro e escuro */
+
+/* Estilos básicos do corpo da página (transição de tema) */
+body {
+    transition: background 0.8s ease-in-out; /* Transição suave para mudança de fundo (tema) */
+}
+
+/* Tema claro: gradiente de fundo azul/verde claro (mantido) */
+body.light {
+    background: linear-gradient(135deg, #e0f2f7, #c1e7f0, #9fd8e6);
+    color: var(--color-text-dark); /* Texto escuro padrão */
+}
+
+/* Tema escuro: gradiente de fundo escuro aprimorado (cores mais vivas) */
+body.dark {
+    background: linear-gradient(135deg, #1c0f3f, #331e6b, #5a30a1); /* Tons de roxo/azul escuro */
+    color: #e0e7ff; /* Texto principal claro */
+}
+
+/* Estilos do efeito de vidro no tema escuro (ajustes para mais visibilidade) */
+body.dark .glass-effect {
+    background: rgba(40, 20, 80, 0.4); /* Fundo mais escuro, mas com tom roxo */
+    backdrop-filter: blur(25px); /* Um pouco mais de blur para profundidade */
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Borda mais visível e brilhante */
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5); /* Sombra mais pronunciada */
+}
+
+/* Efeito de hover no tema escuro para 'glass-effect' */
+body.dark .glass-effect:hover {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7); /* Sombra ainda mais pronunciada */
+    border-color: rgba(255, 255, 255, 0.25); /* Borda mais proeminente no hover */
+}
+
+/* Estilos de inputs e selects no tema escuro (melhor contraste) */
+body.dark .app-input, body.dark .app-select, body.dark textarea {
+    background: rgba(255, 255, 255, 0.08); /* Fundo sutilmente mais claro/visível */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Borda mais definida */
+    color: #e0e7ff; /* Cor do texto claro */
+}
+
+/* Estilos para opções de select no tema escuro */
+body.dark select option {
+    background-color: #331e6b; /* Fundo escuro do gradiente */
+    color: #e0e7ff; /* Texto claro */
+}
+
+/* Estilos de foco no tema escuro para inputs e selects (melhor contraste) */
+body.dark .app-input:focus, body.dark .app-select:focus, body.dark textarea:focus {
+    background: rgba(100, 200, 255, 0.15); /* Um azul claro transparente para foco */
+    border-color: #7bdcb5; /* Borda ciano/verde brilhante */
+    box-shadow: 0 0 18px rgba(123, 220, 181, 0.8); /* Sombra vibrante de foco */
+}
+
+/* Cores de texto nos cards (visibilidade) */
+body.dark .app-title,
+body.dark .item-title,
+body.dark .modal-title,
+body.dark .section-title,
+body.dark .dashboard-title,
+body.dark .modal-input-group label,
+body.dark .dashboard-list li span:first-child {
+    color: #f0f0f0; /* Branco puro ou muito próximo para títulos e labels */
+}
+
+body.dark .item-url-short {
+    color: #92e6f4; /* Azul ciano claro */
+}
+body.dark .item-added-date,
+body.dark .text-gray-600 { /* Para parágrafos de notas e outros textos menores */
+    color: #b0b0b0; /* Cinza médio/claro */
+}
+
+/* Cores de status nos cards (melhor contraste no escuro) */
+body.dark .text-green-600 { color: #7bdcb5; } /* Verde-água vibrante para "Ativo" / "Vendendo" */
+body.dark .text-orange-600 { color: #f4d35e; } /* Amarelo-dourado para "Aquecida" */
+body.dark .text-gray-500 { color: #9aa7b3; } /* Cinza azulado para "Não Ativo" (Shop) */
+
+
+/* Estilos do conteúdo do modal no tema escuro */
+body.dark .modal-content {
+    background: #2b1754; /* Fundo escuro levemente mais claro que o body, com tom roxo */
+    color: #e0e7ff; /* Texto claro */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7); /* Sombra mais escura */
+}
+
+/* Estilos do botão de fechar do modal no tema escuro */
+body.dark .modal-close-btn {
+    color: #ddd; /* Cor mais clara */
+}
+body.dark .modal-close-btn:hover {
+    color: #fff; /* Cor branca no hover */
+}
+
+/* Botão de limpar input no tema escuro */
+body.dark .clear-input-btn {
+    color: #ddd; /* Cor mais clara */
+}
+body.dark .clear-input-btn:hover {
+    color: #fff; /* Cor branca no hover */
+}
+
+/* Inverte a cor do SVG no tema escuro (para ícones pretos) */
+body.dark .icon-svg {
+    filter: invert(0.9); /* Inverte para branco/claro */
+}
+
+/* NOVO: Garante que as bandeiras SVG NÃO sejam invertidas no tema escuro */
+body.dark .country-flag-icon { /* Esta classe é aplicada nas suas tags <img> das bandeiras */
+    filter: none; /* Remove qualquer filtro que possa ter sido herdado ou aplicado */
+}
+
+/* Estilo dos botões de aba no tema escuro */
+body.dark .tab-button {
+    background-color: rgba(255, 255, 255, 0.08); /* Fundo muito sutil para abas não ativas */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
+    color: #c0c0c0; /* Texto cinza claro */
+}
+
+/* Efeito de hover nos botões de aba no tema escuro */
+body.dark .tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.15); /* Fundo mais visível no hover */
+    border-color: rgba(255, 255, 255, 0.2); /* Borda mais visível */
+    color: white; /* Texto branco no hover */
+}
+
+/* Estilo para a aba ativa no tema escuro (novo gradiente vibrante) */
+body.dark .tab-button.active {
+    background: linear-gradient(135deg, #7bdcb5, #00d084); /* Gradiente de verde elétrico */
+    border-color: #7bdcb5; /* Borda verde */
+    box-shadow: 0 4px 10px rgba(123, 220, 181, 0.4); /* Sombra verde vibrante */
+    color: var(--color-text-dark); /* Texto escuro para alto contraste no verde */
+}
+
+/* Cartões do dashboard no tema escuro */
+body.dark .dashboard-card {
+    background: rgba(40, 20, 80, 0.4); /* Consistente com glass-effect principal */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e0e7ff; /* Cor do texto (tema escuro) */
+}
+body.dark .dashboard-card h3 {
+    color: #7bdcb5; /* Cor do título (verde vibrante) */
+}
+body.dark .dashboard-list li {
+    color: #b0b0b0; /* Cinza claro para itens de lista */
+}
+body.dark .dashboard-list li span:first-child {
+    color: #e0e7ff; /* Branco mais claro para nomes de itens */
+}
+
+
+/* Botões com fundo colorido no tema escuro (ajustar para cores do tema escuro) */
+body.dark .primary-button {
+    background-color: #7bdcb5; /* Ciano/Verde brilhante */
+    color: var(--color-text-dark); /* Texto escuro para contraste */
+}
+body.dark .primary-button:hover {
+    background-color: #5ec0a0;
+}
+
+body.dark .secondary-button {
+    background-color: rgba(255, 255, 255, 0.1); /* Um pouco mais visível */
+    color: #e0e7ff; /* Texto claro */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+body.dark .secondary-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark .confirm-button { /* Verde para confirmar */
+    background-color: #34c759;
+}
+body.dark .confirm-button:hover {
+    background-color: #2da44e;
+}
+
+body.dark .delete-button { /* Vermelho para deletar */
+    background-color: #ff3b30;
+}
+body.dark .delete-button:hover {
+    background-color: #e63028;
+}
+
+body.dark .cancel-button { /* Cinza claro para cancelar no tema escuro */
+    background-color: rgba(255, 255, 255, 0.15); /* Mais visível */
+    color: #e0e7ff; /* Texto claro */
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+body.dark .cancel-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Footer no tema escuro */
+body.dark .app-footer {
+    color: #a0aec0; /* Cinza claro */
+}
+body.dark .app-footer .footer-link {
+    color: #c0c0c0; /* Cinza claro */
+}
+body.dark .app-footer .footer-link:hover {
+    color: #7bdcb5; /* Cor de acento do tema escuro (verde-água) */
+}
+.modal-divider {
+    border-top-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark .status-warmed {
+    color: var(--color-text-dark); /* Garante que o texto seja escuro no tema escuro para contraste */
+}
+body.dark .account-card .item-thumbnail-img {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+body.dark .user-id-display {
+    color: #a0aec0;
+}
+/* No tema escuro, o separador da lista detalhada é diferente */
+body.dark .dashboard-list.detailed-list li {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.dark .dashboard-card .dashboard-title .icon-svg {
+    color: var(--color-success); /* Ícones de título com cor de sucesso no tema escuro */
+}
+body.dark .dashboard-list .item-thumbnail.fa-user-circle {
+    color: #92e6f4; /* Azul ciano no tema escuro */
+}
+body.dark .dashboard-list .item-thumbnail.fa-store {
+    color: #7bdcb5; /* Verde-água no tema escuro */
+}

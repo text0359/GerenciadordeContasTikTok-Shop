@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Shop Account Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="estilo.css">
+    <link rel="stylesheet" href="tema.css">
+    <style>
+        /* Styles for loading overlay and spinner, critical for immediate feedback */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            color: white;
+            font-size: 1.5rem;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* POPUP DE DESCRIÇÃO */
+        .status-popup {
+            position: fixed;
+            background-color: var(--color-background-card-light);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--color-border-light);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-sm);
+            font-size: 0.8rem;
+            color: var(--color-text-dark);
+            z-index: 1000;
+            width: 250px; /* Largura fixa para o pop-up */
+            max-width: 90vw;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+            pointer-events: none; /* Garante que o popup não interfira com cliques */
+        }
+        .status-popup.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Estilos para a lista de plataformas editável */
+        .platform-list { /* Manter este estilo, mesmo que a lista principal seja removida, para outras listas customizáveis */
+            list-style: none;
+            padding: 0;
+            margin-top: var(--spacing-md);
+            max-height: 200px; /* Altura máxima para rolagem */
+            overflow-y: auto; /* Adiciona rolagem vertical se necessário */
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius-sm);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .platform-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--color-text-dark);
+        }
+        .platform-list li:last-child {
+            border-bottom: none;
+        }
+        .platform-list li .platform-actions button {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 0.7em;
+            margin-left: var(--spacing-xs);
+            border-radius: 4px;
+        }
+        /* Destaque para item selecionado na lista de plataformas */
+        .platform-list li.selected {
+            background-color: rgba(0, 122, 255, 0.2); /* Um azul suave para seleção */
+            border-left: 3px solid var(--color-primary);
+        }
+
+        /* Styles for checkbox group in modal */
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-text-dark);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: var(--spacing-xs);
+            /* Add custom checkbox styling if desired */
+        }
+
+        /* Styles for platform creation and device lists */
+        .creation-platform-list, .device-list {
+            list-style: none;
+            padding: 0;
+            margin-top: var(--spacing-md);
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius-sm);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .creation-platform-list li, .device-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--color-text-dark);
+        }
+        .creation-platform-list li:last-child, .device-list li:last-child {
+            border-bottom: none;
+        }
+        .creation-platform-list li .actions button, .device-list li .actions button {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 0.7em;
+            margin-left: var(--spacing-xs);
+            border-radius: 4px;
+        }
+        .creation-platform-list li.selected, .device-list li.selected {
+            background-color: rgba(0, 122, 255, 0.2);
+            border-left: 3px solid var(--color-primary);
+        }
+        .creation-platform-list li span i, .device-list li span i {
+            margin-right: var(--spacing-xs);
+        }
+        .creation-platform-list li span {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Ajustes para o tamanho do modal de conta */
+        #accountModal .modal-content {
+            max-height: 90vh; /* Limita a altura do modal */
+            overflow-y: auto; /* Adiciona rolagem se o conteúdo for muito grande */
+            width: 90%; /* Ajusta a largura para ser mais responsiva */
+            max-width: 500px; /* Limite máximo para telas grandes */
+        }
+        /* Ajustes para inputs dentro do modal para evitar overflow em telas pequenas */
+        #accountForm .modal-input-group {
+            margin-bottom: var(--spacing-sm); /* Reduz um pouco o espaçamento para economizar espaço */
+        }
+        #accountForm .modal-actions {
+            display: flex;
+            flex-wrap: wrap; /* Permite que os botões quebrem a linha */
+            justify-content: center;
+            gap: var(--spacing-sm); /* Espaçamento entre os botões */
+            margin-top: var(--spacing-md);
+        }
+        #accountForm .modal-actions button {
+            flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
+            max-width: 180px; /* Limita o tamanho máximo de cada botão */
+        }
+        /* Para telas muito pequenas, empilha os botões */
+        @media (max-width: 400px) {
+            #accountForm .modal-actions button {
+                max-width: 100%; /* Ocupa a largura total */
+            }
+        }
+
+        /* Estilos para o novo modal de seleção de ícones */
+        #iconPickerModal .modal-content {
+            max-height: 90vh;
+            width: 90%;
+            max-width: 600px;
+            overflow: hidden; /* O conteúdo interno terá scroll */
+            display: flex;
+            flex-direction: column;
+        }
+        #iconPickerModal .modal-body {
+            flex-grow: 1; /* Permite que o corpo ocupe o espaço restante */
+            overflow-y: auto; /* Adiciona scroll ao corpo */
+            padding: var(--spacing-md);
+        }
+        #iconPickerModal .icon-search-input {
+            width: calc(100% - var(--spacing-lg) * 2); /* Ajusta largura com padding */
+            padding: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--border-radius-sm);
+            background-color: var(--color-background-input);
+            color: var(--color-text-dark);
+        }
+        #iconPickerModal .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); /* 60px para ícones, 1fr para preencher */
+            gap: var(--spacing-sm);
+            max-height: 400px; /* Altura fixa para a grade de ícones com scroll */
+            overflow-y: auto;
+            padding-right: 5px; /* Para não cortar a barra de rolagem */
+        }
+        #iconPickerModal .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            color: var(--color-text-dark);
+            font-size: 0.75rem; /* Tamanho do texto do nome do ícone */
+            text-align: center;
+        }
+        #iconPickerModal .icon-item:hover {
+            background-color: rgba(0, 122, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        #iconPickerModal .icon-item i {
+            font-size: 1.8rem; /* Tamanho do ícone em si */
+            margin-bottom: var(--spacing-xs);
+            color: var(--color-primary); /* Cor do ícone */
+        }
+        #iconPickerModal .icon-item.selected {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-dark);
+        }
+        #iconPickerModal .icon-item.selected i {
+            color: white;
+        }
+        .input-with-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+        .input-with-button .app-input {
+            flex-grow: 1;
+        }
+        .input-with-button .app-button.icon-picker-btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 0.9em;
+            white-space: nowrap; /* Impede que o texto do botão quebre */
+        }
+
+    </style>
+</head>
+<body class="light">
+    <div class="app-container">
+        <header class="app-header glass-effect">
+            <h1 class="app-title">
+                <i class="fab fa-tiktok"></i> Gerenciador de Contas TikTok Shop
+            </h1>
+            <div class="header-actions">
+                <button id="addAccountBtn" class="app-button primary-button">
+                    <i class="fas fa-plus-circle"></i> Adicionar Conta
+                </button>
+                <button id="importAccountsBtn" class="app-button secondary-button">
+                    <i class="fas fa-file-import"></i> Importar
+                </button>
+                <button id="exportAccountsBtn" class="app-button secondary-button">
+                    <i class="fas fa-file-export"></i> Exportar
+                </button>
+                <button id="toggleThemeBtn" class="app-button secondary-button">
+                    <i class="fas fa-moon"></i> Tema
+                </button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <nav class="tab-buttons-container glass-effect">
+                <button class="tab-button active" data-tab="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </button>
+                <button class="tab-button" data-tab="accounts">
+                    <i class="fas fa-users"></i> Minhas Contas
+                </button>
+                <button class="tab-button" data-tab="settings">
+                    <i class="fas fa-cog"></i> Configurações
+                </button>
+            </nav>
+
+            <section id="dashboard" class="tab-content active glass-effect animate-fade-in">
+                <h2 class="dashboard-title"><i class="fas fa-chart-line icon-svg"></i> Visão Geral do Dashboard</h2>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-users icon-svg"></i> Total de Contas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center;" id="totalAccountsCount">0</p>
+                        <p class="dashboard-status-description">Número total de contas cadastradas no sistema.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-fire icon-svg"></i> Contas em Aquecimento</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-heating);" id="heatingAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas que estão em processo gradual de aumento de atividade e interações.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-seedling icon-svg"></i> Contas Recém-Criadas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-new);" id="newAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas registradas recentemente, em fase inicial de validação e maturação.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-eye icon-svg"></i> Contas em Observação</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-observing);" id="observingAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas sob monitoramento intensivo devido a anomalias ou fase inicial de validação.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-chart-line icon-svg"></i> Contas em Crescimento</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-growing);" id="growingAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas expandindo sua base de seguidores/alcance de forma consistente e positiva.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-bug icon-svg"></i> Contas Bugadas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-bugged);" id="buggedAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas que apresentam falhas técnicas persistentes na plataforma.</p>
+                    </div>
+                     <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-lock icon-svg"></i> Contas Restritas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-restricted);" id="restrictedAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas com funcionalidades limitadas pela plataforma devido a violações ou atividades suspeitas.</p>
+                    </div>
+                     <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-thermometer-empty icon-svg"></i> Contas Esfriadas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-cooled);" id="cooledAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas com diminuição drástica e prolongada na atividade, engajamento ou alcance.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-exclamation-triangle icon-svg"></i> Contas Problemáticas</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-problematic);" id="problematicAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas que violaram os Termos de Serviço ou demonstraram comportamento prejudicial/abusivo.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-check-circle icon-svg"></i> Contas Ativas/Saudáveis</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-active);" id="activeHealthyAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas operando normalmente, com bom desempenho e sem problemas aparentes.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-pause-circle icon-svg"></i> Contas em Pausa</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-paused);" id="pausedAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas intencionalmente desativadas ou com atividades suspensas por um período definido.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-archive icon-svg"></i> Bateu os Requisitos</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-archived);" id="archivedAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas que atingiram os critérios e estão prontas para o próximo estágio.</p>
+                    </div>
+                    <div class="dashboard-card glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-shield-alt icon-svg"></i> TikTok Shop Ativo</h3>
+                        <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-verified);" id="verifiedAccountsCount">0</p>
+                        <p class="dashboard-status-description">Contas que possuem a funcionalidade TikTok Shop totalmente ativa e operacional.</p>
+                    </div>
+
+                    <div class="dashboard-card dashboard-card-large glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-pencil-alt icon-svg"></i> Contas por Plataforma de Criação</h3>
+                        <ul id="accountsByCreationPlatformList" class="dashboard-list detailed-list">
+                            <li>Nenhum dado disponível.</li>
+                        </ul>
+                    </div>
+
+                    <div class="dashboard-card dashboard-card-large glass-effect">
+                        <h3 class="dashboard-title"><i class="fas fa-laptop-code icon-svg"></i> Contas por Dispositivo de Criação</h3>
+                        <ul id="accountsByCreationDeviceList" class="dashboard-list detailed-list">
+                            <li>Nenhum dado disponível.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </section>
+
+            <section id="accounts" class="tab-content glass-effect">
+                <h2 class="dashboard-title"><i class="fas fa-users icon-svg"></i> Minhas Contas TikTok Shop</h2>
+                <div class="filter-controls glass-effect">
+                    <div class="input-with-clear">
+                        <label for="searchInput" class="hidden-visually">Pesquisar Contas</label>
+                        <input type="text" id="searchInput" class="app-input" placeholder="Pesquisar por nome, email, país...">
+                        <button class="clear-input-btn" id="clearSearchBtn" aria-label="Limpar Pesquisa">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <label for="countryFilter" class="hidden-visually">Filtrar por País</label>
+                    <select id="countryFilter" class="app-select">
+                        <option value="">Todos os Países</option>
+                    </select>
+                    <label for="statusFilter" class="hidden-visually">Filtrar por Status</label>
+                    <select id="statusFilter" class="app-select">
+                        <option value="">Todos os Status</option>
+                        </select>
+                </div>
+
+                <div id="accountsGrid" class="account-grid">
+                    <p class="no-results-message hidden" id="noAccountsMessage">Nenhuma conta encontrada. Adicione uma nova conta ou ajuste seus filtros.</p>
+                </div>
+            </section>
+
+            <section id="settings" class="tab-content glass-effect">
+                <h2 class="dashboard-title"><i class="fas fa-cog icon-svg"></i> Configurações</h2>
+                <div class="settings-section">
+                    <h3 class="modal-title" style="font-size: 1.3rem; margin-bottom: var(--spacing-md);">Gerenciamento de Dados</h3>
+                    <p class="modal-message" style="margin-bottom: var(--spacing-lg);">Aqui você pode gerenciar seus dados de contas. Tenha cuidado ao usar estas opções.</p>
+
+                    <div class="modal-input-group">
+                        <label for="importFile" class="file-input-label">Importar Contas de Arquivo JSON:</label>
+                        <input type="file" id="importFile" accept=".json" class="app-input" style="padding: 0.5rem;">
+                        <button id="confirmImportBtn" class="app-button primary-button mt-md">
+                            <i class="fas fa-upload"></i> Carregar e Importar
+                        </button>
+                    </div>
+
+                    <hr class="modal-divider">
+
+                    <h3 class="modal-title" style="font-size: 1.3rem; margin-bottom: var(--spacing-md);">Gerenciar Plataformas de Criação</h3>
+                    <div class="modal-input-group">
+                        <label for="creationPlatformNameInput">Nome da Plataforma de Criação:</label>
+                        <input type="text" id="creationPlatformNameInput" class="app-input" placeholder="Ex: Gmail, Outlook, Número de Telefone, Facebook">
+                    </div>
+                    <div class="modal-input-group input-with-button">
+                        <label for="creationPlatformIconInput">Ícone da Plataforma (Font Awesome):</label>
+                        <input type="text" id="creationPlatformIconInput" class="app-input" placeholder="Ex: fas fa-envelope, fab fa-google, fa-solid fa-envelope-circle-check">
+                        <button type="button" class="app-button secondary-button icon-picker-btn" data-target-input="creationPlatformIconInput">
+                            <i class="fas fa-palette"></i> Selecionar Ícone
+                        </button>
+                        <p class="modal-message" style="font-size:0.8em; color: var(--color-text-dark);">
+                            Use classes de ícones Font Awesome 6. Ex: `fas fa-envelope` (Gmail), `fa-solid fa-envelope-circle-check` (Outlook), `fab fa-google` (Google), `fab fa-facebook` (Facebook), `fas fa-phone` (Telefone).
+                        </p>
+                    </div> 
+                    <div class="modal-actions">
+                        <button id="addCreationPlatformBtn" class="app-button primary-button">
+                            <i class="fas fa-plus-circle"></i> Adicionar
+                        </button>
+                        <button id="editCreationPlatformBtn" class="app-button secondary-button">
+                            <i class="fas fa-edit"></i> Editar Selecionada
+                        </button>
+                        <button id="removeCreationPlatformBtn" class="app-button delete-button">
+                            <i class="fas fa-trash-alt"></i> Remover Selecionada
+                        </button>
+                    </div>
+                    <ul id="creationPlatformList" class="creation-platform-list">
+                    </ul>
+                    <button id="removeAllCreationPlatformsBtn" class="app-button delete-button mt-md">
+                        <i class="fas fa-times-circle"></i> Remover Todas as Plataformas de Criação
+                    </button>
+
+
+                    <hr class="modal-divider">
+
+                    <h3 class="modal-title" style="font-size: 1.3rem; margin-bottom: var(--spacing-md);">Gerenciar Dispositivos de Criação</h3>
+                    <div class="modal-input-group">
+                        <label for="deviceNameInput">Nome do Dispositivo:</label>
+                        <input type="text" id="deviceNameInput" class="app-input" placeholder="Ex: PC, Celular, Navegador Normal, Antidetect">
+                    </div>
+                    <div class="modal-input-group input-with-button">
+                        <label for="deviceIconInput">Ícone do Dispositivo (Font Awesome):</label>
+                        <input type="text" id="deviceIconInput" class="app-input" placeholder="Ex: fas fa-desktop, fas fa-mobile-alt">
+                        <button type="button" class="app-button secondary-button icon-picker-btn" data-target-input="deviceIconInput">
+                            <i class="fas fa-palette"></i> Selecionar Ícone
+                        </button>
+                        <p class="modal-message" style="font-size:0.8em; color: var(--color-text-dark);">
+                            Use classes de ícones Font Awesome 6. Ex: `fas fa-desktop` (PC), `fas fa-mobile-alt` (Celular), `fas fa-globe` (Navegador Normal), `fas fa-user-secret` (Antidetect).
+                        </p>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="addDeviceBtn" class="app-button primary-button">
+                            <i class="fas fa-plus-circle"></i> Adicionar
+                        </button>
+                        <button id="editDeviceBtn" class="app-button secondary-button">
+                            <i class="fas fa-edit"></i> Editar Selecionado
+                        </button>
+                        <button id="removeDeviceBtn" class="app-button delete-button">
+                            <i class="fas fa-trash-alt"></i> Remover Selecionado
+                        </button>
+                    </div>
+                    <ul id="deviceList" class="device-list">
+                    </ul>
+                    <button id="removeAllDevicesBtn" class="app-button delete-button mt-md">
+                        <i class="fas fa-times-circle"></i> Remover Todos os Dispositivos
+                    </button>
+
+                    <hr class="modal-divider">
+
+                    <h3 class="modal-title" style="font-size: 1.3rem; margin-bottom: var(--spacing-md);">Configurações do WhatsApp</h3>
+                    <div class="modal-input-group">
+                        <label for="whatsappNumberInput">Número de Telefone para Envio (WhatsApp):</label>
+                        <input type="tel" id="whatsappNumberInput" class="app-input" placeholder="Ex: 5511987654321">
+                        <p class="modal-message" style="font-size:0.8em; color: var(--color-text-dark);">
+                            Salve o número para enviar dados de contas rapidamente. Formato: DDI + DDD + Número (apenas dígitos).
+                        </p>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="saveWhatsappNumberBtn" class="app-button confirm-button">
+                            <i class="fas fa-save"></i> Salvar Número
+                        </button>
+                        <button id="clearWhatsappNumberBtn" class="app-button secondary-button">
+                            <i class="fas fa-trash-alt"></i> Limpar Número
+                        </button>
+                    </div>
+
+                    <hr class="modal-divider">
+
+                    <h3 class="modal-title danger-zone-label" style="font-size: 1.3rem;">Zona de Perigo</h3>
+                    <p class="modal-message" style="margin-bottom: var(--spacing-lg);">Estas ações são irreversíveis. Prossiga com extrema cautela.</p>
+
+                    <button id="deleteAllAccountsBtn" class="app-button delete-button">
+                        <i class="fas fa-trash-alt"></i> Excluir Todas as Contas
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2025 TikTok Shop Account Manager. Todos os direitos reservados Created by Werveson Nean.</p>
+            <nav>
+                <a href="#" class="footer-link">Privacidade</a> <span class="footer-separator">|</span>
+                <a href="#" class="footer-link">Termos</a> <span class="footer-separator">|</span>
+                <a href="#" class="footer-link">Contato</a>
+            </nav>
+            <p class="user-id-display">ID do Usuário: <span id="currentUserId">Carregando...</span></p>
+        </footer>
+    </div>
+
+    <div id="accountModal" class="modal-overlay hidden">
+        <div class="modal-content glass-effect">
+            <button class="modal-close-btn" id="closeAccountModalBtn"><i class="fas fa-times"></i></button>
+            <h2 class="modal-title" id="accountModalTitle">Adicionar Nova Conta</h2>
+            <form id="accountForm">
+                <input type="hidden" id="accountId">
+                <div class="modal-input-group">
+                    <label for="accountName">Nome da Conta:</label>
+                    <input type="text" id="accountName" class="app-input" required>
+                </div>
+                 <div class="modal-input-group">
+                    <label for="accountCreationPlatform">Plataforma de Criação:</label>
+                    <select id="accountCreationPlatform" class="app-select" required>
+                        <option value="">Selecione a Plataforma de Criação</option>
+                    </select>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountCreationDevice">Dispositivo de Criação:</label>
+                    <select id="accountCreationDevice" class="app-select" required>
+                        <option value="">Selecione o Dispositivo de Criação</option>
+                    </select>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountEmail">Email:</label>
+                    <input type="email" id="accountEmail" class="app-input" required>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountPassword">Senha:</label>
+                    <input type="text" id="accountPassword" class="app-input" required>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountCountry">País:</label>
+                    <input type="text" id="accountCountry" class="app-input" required>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountStatus">Status:</label>
+                    <select id="accountStatus" class="app-select" required>
+                        <option value="RECÉM-CRIADA">Recém-Criada</option>
+                        <option value="EM OBSERVAÇÃO">Em Observação</option>
+                        <option value="PROBLEMÁTICA">Problemática</option>
+                        <option value="EM CRESCIMENTO">Em Crescimento</option>
+                        <option value="CONTA BUGADA">Conta Bugada</option>
+                        <option value="CONTA RESTRITA">Conta Restrita</option>
+                        <option value="CONTA ESFRIOU">Conta Esfriou</option>
+                        <option value="EM AQUECIMENTO">Em Aquecimento</option>
+                        <option value="ATIVA/SAUDÁVEL">Ativa/Saudável</option>
+                        <option value="PAUSA TEMPORÁRIA">Pausa Temporária</option>
+                        <option value="BATEU OS REQUISITOS">Bateu os Requisitos</option>
+                        <option value="TIKTOK SHOP ATIVO">TikTok Shop Ativo</option>
+                    </select>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountRating">Avaliação da Qualidade:</label>
+                    <div id="accountRating" class="star-rating" data-rating="0">
+                        <i class="far fa-star" data-value="1"></i>
+                        <i class="far fa-star" data-value="2"></i>
+                        <i class="far fa-star" data-value="3"></i>
+                        <i class="far fa-star" data-value="4"></i>
+                        <i class="far fa-star" data-value="5"></i>
+                    </div>
+                </div>
+                <div class="modal-input-group">
+                    <label for="accountNotes">Notas:</label>
+                    <textarea id="accountNotes" class="app-input" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="app-button confirm-button" id="saveAccountBtn">Salvar Conta</button>
+                    <button type="button" class="app-button cancel-button" id="cancelAccountBtn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmationModal" class="modal-overlay hidden">
+        <div class="modal-content glass-effect">
+            <h2 class="modal-title" id="confirmationModalTitle">Confirmar Ação</h2>
+            <p class="modal-message" id="confirmationModalMessage">Tem certeza de que deseja realizar esta ação?</p>
+            <div class="modal-actions">
+                <button class="app-button confirm-button" id="confirmActionBtn">Confirmar</button>
+                <button class="app-button cancel-button" id="cancelActionBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal-overlay hidden">
+        <div class="modal-content glass-effect">
+            <button class="modal-close-btn" id="closeMessageModalBtn"><i class="fas fa-times"></i></button>
+            <h2 class="modal-title" id="messageModalTitle">Mensagem</h2>
+            <p class="modal-message" id="messageModalContent">Esta é uma mensagem de exemplo.</p>
+            <div class="modal-actions">
+                <button class="app-button primary-button" id="okMessageModalBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="importOptionsModal" class="modal-overlay hidden">
+        <div class="modal-content glass-effect">
+            <button class="modal-close-btn" id="closeImportOptionsModalBtn"><i class="fas fa-times"></i></button>
+            <h2 class="modal-title">Opções de Importação</h2>
+            <p class="modal-message">Selecione os tipos de dados que deseja importar do arquivo:</p>
+            <div class="modal-input-group checkbox-group">
+                <label>
+                    <input type="checkbox" id="importAccountsCheckbox" checked> Contas
+                </label>
+                <label>
+                    <input type="checkbox" id="importSettingsCheckbox" checked> Configurações (Número WhatsApp, Tema, etc.)
+                </label>
+                <label>
+                    <input type="checkbox" id="importCreationPlatformsCheckbox" checked> Plataformas de Criação
+                </label>
+                <label>
+                    <input type="checkbox" id="importDevicesCheckbox" checked> Dispositivos de Criação
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="app-button confirm-button" id="startImportProcessBtn">Iniciar Importação</button>
+                <button class="app-button cancel-button" id="cancelImportOptionsBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="iconPickerModal" class="modal-overlay hidden">
+        <div class="modal-content glass-effect">
+            <button class="modal-close-btn" id="closeIconPickerModalBtn"><i class="fas fa-times"></i></button>
+            <h2 class="modal-title">Selecionar Ícone</h2>
+            <div class="modal-body">
+                <input type="text" id="iconSearchInput" class="app-input icon-search-input" placeholder="Pesquisar ícones (ex: google, phone, desktop)">
+                <div id="iconGrid" class="icon-grid">
+                    </div>
+            </div>
+            <div class="modal-actions">
+                <button class="app-button primary-button" id="selectIconBtn">Selecionar</button>
+                <button class="app-button cancel-button" id="cancelIconPickerBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p>Carregando...</p>
+    </div>
+
+    <button id="go-to-top-btn" class="scroll-btn hidden"><i class="fas fa-arrow-up"></i></button>
+    <button id="go-to-bottom-btn" class="scroll-btn hidden"><i class="fas fa-arrow-down"></i></button>
+
+    <script src="logica.js"></script>
+</body>
+</html>
