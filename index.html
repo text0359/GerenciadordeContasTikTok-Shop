@@ -257,6 +257,40 @@
             white-space: nowrap; /* Impede que o texto do botão quebre */
         }
 
+        /* --- NOVOS ESTILOS PARA OS ÍCONES DA ACCOUNT CARD --- */
+        .account-card-header-icons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px; /* Espaço entre os ícones */
+            z-index: 10; /* Garante que os ícones fiquem por cima */
+        }
+
+        /* Estilos para o ícone de TikTok Shop Ativo (glow green) */
+        .tiktok-shop-active-icon {
+            color: limegreen; /* Cor base para o glow */
+            font-size: 24px;
+            text-shadow: 0 0 5px limegreen, 0 0 10px limegreen, 0 0 15px limegreen;
+            animation: glow-green 1.5s infinite alternate; /* Animação de glow */
+        }
+
+        @keyframes glow-green {
+            from {
+                text-shadow: 0 0 5px limegreen, 0 0 10px limegreen, 0 0 15px limegreen;
+            }
+            to {
+                text-shadow: 0 0 10px limegreen, 0 0 20px limegreen, 0 0 30px limegreen;
+            }
+        }
+
+        /* Estilos para o ícone de Bateu os Requisitos */
+        .met-requirements-icon {
+            color: gold; /* Cor para o ícone de requisito */
+            font-size: 24px;
+            text-shadow: 0 0 5px gold, 0 0 10px gold; /* Um leve brilho para se destacar */
+        }
+        /* --- FIM DOS NOVOS ESTILOS --- */
     </style>
 </head>
 <body class="light">
@@ -353,25 +387,25 @@
                         <p class="dashboard-status-description">Contas intencionalmente desativadas ou com atividades suspensas por um período definido.</p>
                     </div>
                     <div class="dashboard-card glass-effect">
-                        <h3 class="dashboard-title"><i class="fas fa-archive icon-svg"></i> Bateu os Requisitos</h3>
+                        <h3 class="dashboard-title"><i class="fas fa-solid fa-medal fa-fade icon-svg"></i> Bateu os Requisitos</h3>
                         <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-archived);" id="archivedAccountsCount">0</p>
                         <p class="dashboard-status-description">Contas que atingiram os critérios e estão prontas para o próximo estágio.</p>
                     </div>
                     <div class="dashboard-card glass-effect">
-                        <h3 class="dashboard-title"><i class="fas fa-shield-alt icon-svg"></i> TikTok Shop Ativo</h3>
+                        <h3 class="dashboard-title"><i class="fas fa-solid fa-bag-shopping fa-beat-fade icon-svg"></i> TikTok Shop Ativo</h3>
                         <p style="font-size: 2.5rem; font-weight: 700; text-align: center; color: var(--status-verified);" id="verifiedAccountsCount">0</p>
                         <p class="dashboard-status-description">Contas que possuem a funcionalidade TikTok Shop totalmente ativa e operacional.</p>
                     </div>
 
                     <div class="dashboard-card dashboard-card-large glass-effect">
-                        <h3 class="dashboard-title"><i class="fas fa-pencil-alt icon-svg"></i> Contas por Plataforma de Criação</h3>
+                        <h3 class="dashboard-title"><i class="fas fa-solid fa-square-pen icon-svg"></i>Plataforma de Criação</h3>
                         <ul id="accountsByCreationPlatformList" class="dashboard-list detailed-list">
                             <li>Nenhum dado disponível.</li>
                         </ul>
                     </div>
 
                     <div class="dashboard-card dashboard-card-large glass-effect">
-                        <h3 class="dashboard-title"><i class="fas fa-laptop-code icon-svg"></i> Contas por Dispositivo de Criação</h3>
+                        <h3 class="dashboard-title"><i class="fas fa-solid fa-laptop-medical icon-svg"></i>Dispositivo de Criação</h3>
                         <ul id="accountsByCreationDeviceList" class="dashboard-list detailed-list">
                             <li>Nenhum dado disponível.</li>
                         </ul>
@@ -494,7 +528,7 @@
                     <div class="modal-input-group">
                         <label for="whatsappNumberInput">Número de Telefone para Envio (WhatsApp):</label>
                         <input type="tel" id="whatsappNumberInput" class="app-input" placeholder="Ex: 5511987654321">
-                        <p class="modal-message" style="font-size:0.8em; color: var(--color-text-dark);">
+                        <p class="modal-message" style="font-size:0.8em;">
                             Salve o número para enviar dados de contas rapidamente. Formato: DDI + DDD + Número (apenas dígitos).
                         </p>
                     </div>

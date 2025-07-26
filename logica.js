@@ -7,6 +7,8 @@ let appSettings = {};
 let selectedCreationPlatformForEdit = null;
 let selectedDeviceForEdit = null;
 let importedFileContent = null; // Variável para armazenar o conteúdo do arquivo JSON importado temporariamente
+let translations = {};
+let currentLanguage = localStorage.getItem('language') || 'pt'; // Idioma padrão: Português
 
 // Para o seletor de ícones
 let currentIconTargetInput = null; // Para saber qual input (creationPlatformIconInput ou deviceIconInput) está ativo
@@ -106,7 +108,64 @@ const ALL_POSSIBLE_STATUSES = [
     'BATEU OS REQUISITOS',
     'TIKTOK SHOP ATIVO'
 ];
+async function loadTranslations() {
+  try {
+    const response = await fetch('translations.json');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    translations = await response.json();
+    console.log("Traduções carregadas:", translations);
+  } catch (e) {
+    console.error("Erro ao carregar traduções:", e);
+    showMessageModal('Erro', 'Não foi possível carregar as traduções. O idioma padrão será usado.');
+  }
+}
+function applyTranslations() {
+  if (!translations[currentLanguage]) {
+    console.warn(`Traduções para o idioma "${currentLanguage}" não encontradas. Usando padrão.`);
+    return;
+  }
 
+  const t = translations[currentLanguage];
+
+  // Atualizar elementos do DOM com data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(element => {
+    const key = element.getAttribute('data-i18n');
+    if (t[key]) {
+      if (element.tagName === 'INPUT' && element.type === 'text') {
+        element.placeholder = t[key];
+      } else {
+        element.textContent = t[key];
+      }
+    }
+  });
+
+  // Atualizar opções do select de status
+  const statusSelect = document.getElementById('accountStatus');
+  if (statusSelect) {
+    Array.from(statusSelect.options).forEach((option, index) => {
+      if (index > 0) { // Ignora a primeira opção (placeholder)
+        const statusKey = `status_${option.value.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+        option.textContent = t[statusKey] || option.textContent;
+      }
+    });
+  }
+
+  // Atualizar STATUS_DESCRIPTIONS
+  ALL_POSSIBLE_STATUSES.forEach(status => {
+    const statusKey = `status_${status.toLowerCase().replace(/[^a-z0-9]/g, '_')}_description`;
+    STATUS_DESCRIPTIONS[status] = t[statusKey] || STATUS_DESCRIPTIONS[status];
+  });
+
+  // Atualizar botões e outros elementos dinâmicos
+  toggleThemeBtn.innerHTML = `${document.body.classList.contains('dark') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'} ${t.theme_btn}`;
+  document.getElementById('languageSelect').value = currentLanguage;
+
+  // Re-renderizar contas e dashboard para refletir traduções
+  applyFilters();
+  updateDashboard();
+}
 // Elementos do DOM (obtidos ao final do script, dentro do DOMContentLoaded ou window.onload)
 let toggleThemeBtn, addAccountBtn, importAccountsBtn, exportAccountsBtn, deleteAllAccountsBtn, confirmImportBtn, importFileInput;
 let accountModal, accountModalTitle, closeAccountModalBtn, cancelAccountBtn, accountForm, accountIdInput, accountNameInput, accountEmailInput, accountPasswordInput, accountCountryInput, accountStatusInput, accountNotesInput, accountRatingInput;
@@ -748,6 +807,35 @@ async function handleRemoveAllDevices() {
 
 // --- Funções de Renderização de Cards e Detalhes ---
 
+// Mapeamento de nomes de países para códigos ISO 3166-1 alpha-2 em minúsculas
+// É uma suposição, ajuste conforme a nomenclatura dos seus arquivos SVG.
+const COUNTRY_CODE_MAP = {
+    'ESTADOS UNIDOS': 'us',
+    'REINO UNIDO': 'gb', // Great Britain
+    'INDONESIA': 'id',
+    'MALASIA': 'my',
+    'TAILANDIA': 'th',
+    'VIETNA': 'vn',
+    'FILIPINAS': 'ph',
+    'JAPAO': 'jp',
+    'SINGAPURA': 'sg',
+    'ESPANHA': 'es',
+    'IRLANDA': 'ie',
+    'ALEMANHA': 'de',
+    'FRANCA': 'fr',
+    'ITALIA': 'it',
+    'BRASIL': 'br',
+    'MEXICO': 'mx',
+};
+
+function getCountryFlagSvg(countryName) {
+    const code = COUNTRY_CODE_MAP[countryName.toUpperCase()];
+    if (code) {
+        return `<img src="assets/flags/${code}.svg" alt="${countryName} Flag" class="country-flag-icon" style="width: 20px; height: auto; margin-right: 5px; vertical-align: middle;">`;
+    }
+    return ''; // Retorna vazio se não houver um SVG correspondente
+}
+
 function getStatusClass(status) {
     switch (status) {
         case 'RECÉM-CRIADA': return 'status-new';
@@ -779,6 +867,7 @@ function renderAccountCard(account) {
     const statusText = account.status;
     const statusDescription = STATUS_DESCRIPTIONS[account.status] || STATUS_DESCRIPTIONS['DEFAULT'];
     const starsHtml = renderStars(account.rating);
+    const countryFlag = getCountryFlagSvg(account.country);
 
     // Obter ícone da plataforma de criação
     const creationPlatformObj = appSettings.creationPlatforms.find(p => p.name === account.creationPlatform);
@@ -793,14 +882,22 @@ function renderAccountCard(account) {
     // A plataforma principal agora será apenas o valor salvo, sem a lista customizável
     const mainPlatformDisplayName = account.platform || 'N/A';
 
+    let topIconHtml = '';
+    if (account.status === 'TIKTOK SHOP ATIVO') {
+        topIconHtml = `<div class="account-card-header-icons"><i class="fas fa-solid fa-bag-shopping tiktok-shop-active-icon"></i></div>`;
+    } else if (account.status === 'BATEU OS REQUISITOS') {
+        topIconHtml = `<div class="account-card-header-icons"><i class="fas fa-solid fa-medal met-requirements-icon"></i></div>`;
+    }
+
     return `
         <div class="account-card glass-effect" data-id="${account.id}">
+            ${topIconHtml}
             <div class="item-thumbnail-img">
                 <i class="fas fa-user-circle"></i>
             </div>
             <h3 class="item-title">${account.name}</h3>
             <p class="item-url-short">${account.email}</p>
-            <p class="item-added-date">País: ${account.country}</p>
+            <p class="item-added-date">País: ${countryFlag} ${account.country}</p>
             <p class="item-meta">Plataforma: ${mainPlatformDisplayName}</p>
             <p class="item-meta">Plat. Criação: ${creationPlatformDisplayName}</p>
             <p class="item-meta">Dispositivo: ${creationDeviceDisplayName}</p>
@@ -980,6 +1077,7 @@ function showAccountDetails(id) {
     const statusClass = getStatusClass(account.status);
     const statusDescription = STATUS_DESCRIPTIONS[account.status] || STATUS_DESCRIPTIONS['DEFAULT'];
     const starsHtml = renderStars(account.rating);
+    const countryFlag = getCountryFlagSvg(account.country); // Obter o SVG da bandeira para detalhes
 
     const creationPlatformObj = appSettings.creationPlatforms.find(p => p.name === account.creationPlatform);
     const creationPlatformIcon = creationPlatformObj ? `<i class="${creationPlatformObj.icon}"></i>` : '';
@@ -1019,7 +1117,7 @@ function showAccountDetails(id) {
         <p><strong>Dispositivo de Criação:</strong> ${creationDeviceDisplayName}</p>
         <p><strong>Email:</strong> ${account.email}</p>
         <p><strong>Senha:</strong> ${account.password}</p>
-        <p><strong>País:</strong> ${account.country}</p>
+        <p><strong>País:</strong> ${countryFlag} ${account.country}</p>
         <p>
             <strong>Status:</strong>
             <span class="status-badge ${statusClass}"
@@ -1187,7 +1285,7 @@ async function handleDeleteAccount(id) {
     try {
         accountsData = accountsData.filter(acc => acc.id !== id);
         saveAccountsToLocalStorage();
-        allCountries = new Set(accountsData.map(acc => acc.country));
+        allCountries.clear();
         updateCountryFilterOptions();
         updateStatusFilterOptions();
         applyFilters();
